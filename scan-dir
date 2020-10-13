@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/master/contrib/install.sh | sh -s
+
+EXCLUDED=${EXCLUDED:-''}
+if [ -z "$EXCLUDED" ]
+then 
+  ack --ignore-dir=.github --type yaml 'image: (.*)' --output '$1' -h --nobreak | tr -d \"\' | sort -u | xargs -L1 ./bin/trivy image --severity HIGH,CRITICAL --ignore-unfixed
+else 
+  ack --ignore-dir=.github --type yaml "image: (.*)" --output '$1' -h --nobreak | tr -d \"\' | sort -u | grep -v $(printf -- " -e %s" ${EXCLUDED[@]}) | xargs -L1 ./bin/trivy image --severity HIGH,CRITICAL --ignore-unfixed
+fi
